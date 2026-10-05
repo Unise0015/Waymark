@@ -1,0 +1,1 @@
+"""Plugin parser tests."""
