@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { chains, traffic, TrafficLog } from "@/lib/api";
 
 const METHOD_COLORS: Record<string, string> = {
@@ -12,8 +12,10 @@ const METHOD_COLORS: Record<string, string> = {
   PATCH: "bg-yellow-100 text-yellow-800",
 };
 
-export default function ChainDetailPage({ params }: { params: { id: string } }) {
+export default function ChainDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
   const [chain, setChain] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -25,12 +27,12 @@ export default function ChainDetailPage({ params }: { params: { id: string } }) 
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchChain();
-  }, [params.id]);
+    if (id) fetchChain();
+  }, [id]);
 
   const fetchChain = async () => {
     try {
-      const data = await chains.get(params.id);
+      const data = await chains.get(id);
       // Sort steps
       if (data.steps) {
         data.steps.sort((a: any, b: any) => a.step_order - b.step_order);
