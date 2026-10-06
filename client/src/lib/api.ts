@@ -415,7 +415,7 @@ export const scopeRules = {
 
 export const chains = {
   list: async () => {
-    const res = await fetch(`${API_BASE}/chains`);
+    const res = await fetch(`${API_BASE}/chains/`);
     if (!res.ok) throw new Error('Failed to fetch chains');
     return res.json();
   },
@@ -425,7 +425,7 @@ export const chains = {
     return res.json();
   },
   create: async (data: { name: string; description?: string; hypothesis?: string }) => {
-    const res = await fetch(`${API_BASE}/chains`, {
+    const res = await fetch(`${API_BASE}/chains/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -476,3 +476,4 @@ export const chains = {
     return res.json();
   },
 };
+

@@ -32,7 +32,7 @@ class StepUpdateRequest(BaseModel):
 class ReorderStepsRequest(BaseModel):
     step_ids: List[uuid.UUID]
 
-@router.post("")
+@router.post("/")
 async def create_chain(
     payload: ChainCreateRequest,
     db: AsyncSession = Depends(get_db)
@@ -47,7 +47,7 @@ async def create_chain(
     await db.commit()
     return {"status": "success", "id": str(chain.id)}
 
-@router.get("")
+@router.get("/")
 async def list_chains(
     db: AsyncSession = Depends(get_db)
 ):
@@ -227,3 +227,4 @@ async def analyze_chain(
     await db.commit()
     
     return {"status": "success", "verdict": chain.verdict, "severity": chain.severity}
+
