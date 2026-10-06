@@ -26,6 +26,33 @@ class TrafficIngestRequest(BaseModel):
     
     source: str = Field("burp", description="Source of the traffic")
 
+_BINARY_SIGNATURES = [b'\x89PNG', b'\xff\xd8\xff', b'GIF8', b'RIFF', b'PK\x03\x04', b'\x00\x00\x01\x00']
+_BINARY_CONTENT_TYPES = {'image/', 'audio/', 'video/', 'application/octet-stream', 'application/pdf', 'application/zip', 'font/'}
+
+def _sanitize_body(body: str | None, content_type: str = "") -> str | None:
+    """Strip binary data that PostgreSQL TEXT columns cannot store (null bytes etc)."""
+    if body is None:
+        return None
+    # Check content-type hint
+    ct_lower = content_type.lower()
+    if any(ct_lower.startswith(t) or t in ct_lower for t in _BINARY_CONTENT_TYPES):
+        return f"[Binary content: {ct_lower}, {len(body)} bytes]"
+    # Check for binary magic bytes
+    try:
+        raw = body.encode('latin-1', errors='replace')
+        for sig in _BINARY_SIGNATURES:
+            if raw[:len(sig)] == sig:
+                return f"[Binary content: {len(body)} bytes]"
+    except Exception:
+        pass
+    # Strip null bytes that PostgreSQL cannot store
+    if '\x00' in body:
+        body = body.replace('\x00', '')
+    # Truncate extremely large text bodies (>500KB) to prevent DB bloat
+    if len(body) > 500_000:
+        body = body[:500_000] + f"\n\n[Truncated: original size {len(body)} bytes]"
+    return body
+
 @router.post("/ingest")
 async def ingest_traffic(
     payload: TrafficIngestRequest,
@@ -38,6 +65,14 @@ async def ingest_traffic(
     if not CAPTURE_ENABLED:
         return {"status": "ignored", "reason": "capture is disabled"}
 
+    # Determine content-type from response headers for binary detection
+    resp_ct = ""
+    if payload.response_headers:
+        for k, v in payload.response_headers.items():
+            if k.lower() == "content-type":
+                resp_ct = str(v)
+                break
+
     log_entry = TrafficLog(
         id=uuid.uuid4(),
         method=payload.method,
@@ -45,10 +80,10 @@ async def ingest_traffic(
         path=payload.path,
         query_params=payload.query_params,
         request_headers=payload.request_headers,
-        request_body=payload.request_body,
+        request_body=_sanitize_body(payload.request_body),
         response_status=payload.response_status,
         response_headers=payload.response_headers,
-        response_body=payload.response_body,
+        response_body=_sanitize_body(payload.response_body, resp_ct),
         source=payload.source
     )
     
