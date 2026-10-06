@@ -37,15 +37,16 @@ async def create_chain(
     payload: ChainCreateRequest,
     db: AsyncSession = Depends(get_db)
 ):
+    new_id = uuid.uuid4()
     chain = RequestChain(
-        id=uuid.uuid4(),
+        id=new_id,
         name=payload.name,
         description=payload.description,
         hypothesis=payload.hypothesis
     )
     db.add(chain)
     await db.commit()
-    return {"status": "success", "id": str(chain.id)}
+    return {"status": "success", "id": str(new_id)}
 
 @router.get("/")
 async def list_chains(
@@ -109,8 +110,9 @@ async def add_step(
     if not chain:
         raise HTTPException(status_code=404, detail="Chain not found")
         
+    new_id = uuid.uuid4()
     step = RequestChainStep(
-        id=uuid.uuid4(),
+        id=new_id,
         chain_id=chain_id,
         traffic_log_id=payload.traffic_log_id,
         step_order=payload.step_order,
@@ -118,7 +120,7 @@ async def add_step(
     )
     db.add(step)
     await db.commit()
-    return {"status": "success", "id": str(step.id)}
+    return {"status": "success", "id": str(new_id)}
 
 @router.patch("/{chain_id}/steps/{step_id}")
 async def update_step(
@@ -227,4 +229,6 @@ async def analyze_chain(
     await db.commit()
     
     return {"status": "success", "verdict": chain.verdict, "severity": chain.severity}
+
+
 

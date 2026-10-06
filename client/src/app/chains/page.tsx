@@ -39,7 +39,7 @@ export default function ChainsPage() {
         hypothesis: newChainHypothesis,
       });
       setShowModal(false);
-      router.push(`/chains/${newChain.id}`);
+      router.push(`/chains/${newChain?.id || newChain?.data?.id || (typeof newChain === "string" ? newChain : Object.values(newChain).find(v => typeof v === "string" && v.length > 20))}`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -190,3 +190,5 @@ export default function ChainsPage() {
     </div>
   );
 }
+
+
