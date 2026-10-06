@@ -88,6 +88,12 @@ cmd_start() {
         "$WAYMARK_DIR/venv/bin/pip" install -q -r server/requirements.txt
     fi
 
+    # Run database migrations automatically
+    echo -e "  ${YELLOW}?${NC} Applying database migrations..."
+    cd server
+    "$WAYMARK_DIR/venv/bin/alembic" upgrade head
+    cd ..
+
     # Start backend in background using venv's uvicorn
     cd server
     "$WAYMARK_DIR/venv/bin/uvicorn" app.main:app --host 0.0.0.0 --port 8000 &
@@ -263,3 +269,5 @@ case "${1:-help}" in
         exit 1
         ;;
 esac
+
+
