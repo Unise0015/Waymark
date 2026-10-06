@@ -236,6 +236,71 @@ class LLMAssist:
             logging.warning(f"LLM traffic analysis failed: {e}")
             return f"Analysis failed: {str(e)}"
 
+    async def analyze_request_chain(self, chain_name: str, hypothesis: str, steps: list[dict]) -> str:
+        """
+        Analyze a chain of HTTP requests as a connected attack flow.
+        Each step dict has: step_order, note, method, url, request_headers, request_body,
+        response_status, response_headers, response_body
+        """
+        steps_text = ""
+        for step in steps:
+            steps_text += f"\n{'='*60}\n"
+            steps_text += f"STEP {step['step_order']} of {len(steps)}\n"
+            if step.get('note'):
+                steps_text += f"TESTER'S NOTE: \"{step['note']}\"\n"
+            steps_text += f"{step.get('method', 'GET')} {step.get('url', '')}\n"
+            if step.get('request_headers'):
+                steps_text += f"Request Headers:\n{step['request_headers']}\n"
+            if step.get('request_body'):
+                body = step['request_body'][:2000]
+                steps_text += f"Request Body:\n{body}\n"
+            steps_text += f"Response Status: {step.get('response_status', 'N/A')}\n"
+            if step.get('response_headers'):
+                steps_text += f"Response Headers:\n{step['response_headers']}\n"
+            if step.get('response_body'):
+                body = step['response_body'][:2000]
+                steps_text += f"Response Body:\n{body}\n"
+        
+        prompt = f"""You are an expert penetration tester analyzing a CHAIN of HTTP requests that may form a vulnerability chain. Analyze them as a connected attack flow, NOT as individual requests.
+
+CHAIN NAME: {chain_name}
+TESTER'S HYPOTHESIS: {hypothesis or 'Not specified'}
+
+{steps_text}
+
+{'='*60}
+
+Provide your analysis in this EXACT format:
+
+**VERDICT:** [CONFIRMED VULNERABILITY / PARTIAL VULNERABILITY / FAILED ATTEMPT / INCONCLUSIVE]
+**SEVERITY:** [CRITICAL / HIGH / MEDIUM / LOW / INFO]
+**CLASSIFICATION:** [OWASP Top 10 category and CWE IDs]
+
+**Chain Summary:**
+[2-3 sentence summary of what the attack chain attempts]
+
+**Step-by-Step Breakdown:**
+[For each step, explain what happened, what was discovered, and how it connects to the next step]
+
+**Vulnerability Analysis:**
+[Detailed technical analysis of the vulnerability chain. What makes it exploitable? What's the impact?]
+
+**Evidence:**
+[Key evidence from the request/response data that proves or disproves the vulnerability]
+
+**Recommended Next Steps:**
+[What should the tester try next to confirm, expand, or report this finding?]
+
+**Report-Ready Finding:**
+Title: [Concise vulnerability title]
+Severity: [severity]
+Description: [Professional description suitable for a bug bounty report]
+Steps to Reproduce:
+[Numbered steps]
+Impact: [Business impact statement]
+"""
+        return await self._call_llm(prompt)
+
     async def _call_llm(self, prompt: str) -> str:
         """Route the prompt to the detected LLM provider."""
         if self.provider == "ollama":

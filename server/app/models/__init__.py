@@ -18,3 +18,4 @@ from app.models.integrations import *   # noqa: F401, F403
 from app.models.education import *      # noqa: F401, F403
 from app.models.wordlists import *      # noqa: F401, F403
 from app.models.traffic import *        # noqa: F401, F403
+from app.models.chains import *         # noqa: F401, F403

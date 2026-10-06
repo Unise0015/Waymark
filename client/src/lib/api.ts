@@ -410,3 +410,69 @@ export const scopeRules = {
   }),
   delete: (id: string) => request<void>(`/scope-rules/${id}`, { method: "DELETE" }),
 };
+
+// ── Chains ────────────────────────────────────────────────────────────
+
+export const chains = {
+  list: async () => {
+    const res = await fetch(`${API_BASE}/chains`);
+    if (!res.ok) throw new Error('Failed to fetch chains');
+    return res.json();
+  },
+  get: async (id: string) => {
+    const res = await fetch(`${API_BASE}/chains/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch chain');
+    return res.json();
+  },
+  create: async (data: { name: string; description?: string; hypothesis?: string }) => {
+    const res = await fetch(`${API_BASE}/chains`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create chain');
+    return res.json();
+  },
+  delete: async (id: string) => {
+    const res = await fetch(`${API_BASE}/chains/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete chain');
+    return res.json();
+  },
+  addStep: async (chainId: string, data: { traffic_log_id: string; note?: string; step_order: number }) => {
+    const res = await fetch(`${API_BASE}/chains/${chainId}/steps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to add step');
+    return res.json();
+  },
+  updateStep: async (chainId: string, stepId: string, data: { note?: string; step_order?: number }) => {
+    const res = await fetch(`${API_BASE}/chains/${chainId}/steps/${stepId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update step');
+    return res.json();
+  },
+  removeStep: async (chainId: string, stepId: string) => {
+    const res = await fetch(`${API_BASE}/chains/${chainId}/steps/${stepId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to remove step');
+    return res.json();
+  },
+  reorderSteps: async (chainId: string, stepIds: string[]) => {
+    const res = await fetch(`${API_BASE}/chains/${chainId}/steps/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step_ids: stepIds }),
+    });
+    if (!res.ok) throw new Error('Failed to reorder steps');
+    return res.json();
+  },
+  analyze: async (id: string) => {
+    const res = await fetch(`${API_BASE}/chains/${id}/analyze`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to analyze chain');
+    return res.json();
+  },
+};
