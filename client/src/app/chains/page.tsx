@@ -39,7 +39,23 @@ export default function ChainsPage() {
         hypothesis: newChainHypothesis,
       });
       setShowModal(false);
-      router.push(`/chains/${newChain?.id || newChain?.data?.id || (typeof newChain === "string" ? newChain : Object.values(newChain).find(v => typeof v === "string" && v.length > 20))}`);
+              let targetId = null;
+        if (newChain && typeof newChain === 'object') {
+          targetId = newChain.id || newChain.data?.id;
+          if (!targetId) {
+            const vals = Object.values(newChain);
+            targetId = vals.find(v => typeof v === 'string' && v.length > 20);
+          }
+        } else if (typeof newChain === 'string') {
+          targetId = newChain;
+        }
+        
+        if (targetId) {
+          router.push("/chains/" + targetId);
+        } else {
+          // Fallback: just reload the chains list
+          window.location.reload();
+        }
     } catch (err) {
       console.error(err);
     } finally {
@@ -190,5 +206,6 @@ export default function ChainsPage() {
     </div>
   );
 }
+
 
 
