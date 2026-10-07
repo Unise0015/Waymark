@@ -25,6 +25,7 @@ export default function ChainDetailPage() {
   const [trafficLogs, setTrafficLogs] = useState<TrafficLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) fetchChain();
@@ -291,26 +292,71 @@ export default function ChainDetailPage() {
               ) : (
                 <div className="space-y-2">
                   {filteredLogs.map(log => (
-                    <div key={log.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${METHOD_COLORS[log.method] || 'bg-gray-100 text-gray-800'}`}>
-                          {log.method}
-                        </span>
-                        <span className="truncate text-sm font-mono text-gray-700" title={log.url}>
-                          {log.path}
-                        </span>
-                        {log.response_status && (
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold text-white shrink-0 ${log.response_status < 400 ? 'bg-green-500' : 'bg-red-500'}`}>
-                            {log.response_status}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleAddRequest(log.id)}
-                        className="ml-4 shrink-0 rounded bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                    <div key={log.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                      <div 
+                        className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
                       >
-                        Add
-                      </button>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${METHOD_COLORS[log.method] || 'bg-gray-100 text-gray-800'}`}>
+                            {log.method}
+                          </span>
+                          <span className="truncate text-sm font-mono text-gray-700" title={log.url}>
+                            {log.path}
+                          </span>
+                          {log.response_status && (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold text-white shrink-0 ${log.response_status < 400 ? 'bg-green-500' : 'bg-red-500'}`}>
+                              {log.response_status}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddRequest(log.id);
+                            }}
+                            className="shrink-0 rounded bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                          >
+                            Add
+                          </button>
+                          <svg className={`w-5 h-5 text-gray-400 transition-transform ${expandedLogId === log.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {expandedLogId === log.id && (
+                        <div className="p-4 border-t border-gray-200 bg-[#f8f9fa] flex flex-col gap-4">
+                          <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Request</h4>
+                            <div className="bg-gray-900 text-gray-200 rounded-md p-3 overflow-x-auto text-xs font-mono shadow-inner max-h-60 overflow-y-auto">
+                              <div className="text-blue-400 font-bold mb-1">{log.method} {log.url}</div>
+                              {log.request_headers && Object.entries(log.request_headers).map(([k, v]) => (
+                                <div key={k}><span className="text-purple-300">{k}:</span> {v as string}</div>
+                              ))}
+                              {log.request_body && (
+                                <div className="mt-3 pt-3 border-t border-gray-700 text-gray-300 whitespace-pre-wrap">{log.request_body}</div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Response</h4>
+                            <div className="bg-gray-900 text-gray-200 rounded-md p-3 overflow-x-auto text-xs font-mono shadow-inner max-h-60 overflow-y-auto">
+                              <div className="text-green-400 font-bold mb-1">Status: {log.response_status}</div>
+                              {log.response_headers && Object.entries(log.response_headers).map(([k, v]) => (
+                                <div key={k}><span className="text-purple-300">{k}:</span> {v as string}</div>
+                              ))}
+                              {log.response_body && (
+                                <div className="mt-3 pt-3 border-t border-gray-700 text-gray-300 whitespace-pre-wrap">
+                                  {log.response_body.length > 2000 ? log.response_body.substring(0, 2000) + "\n\n...[TRUNCATED]" : log.response_body}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
