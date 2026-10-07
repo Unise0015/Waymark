@@ -127,7 +127,11 @@ export default function ChainsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      className={shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold }
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        chain.status === "analyzed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
                     >
                       {chain.status}
                     </span>
