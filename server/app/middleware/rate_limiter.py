@@ -35,6 +35,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         "/api/v1/scans": (10, 60),          # 10 scan requests per 60 seconds
         "/api/v1/companies": (30, 60),       # 30 company ops per 60 seconds
         "/api/v1/webhooks": (20, 60),        # 20 webhook ops per 60 seconds
+        "/api/v1/traffic": (10000, 60),      # 10k ops per 60 seconds (bulk import)
         "default": (100, 60),                # 100 requests per 60 seconds for everything else
     }
 
