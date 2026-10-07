@@ -22,7 +22,7 @@ export default function TrafficPage() {
 
   const fetchLogs = async () => {
     try {
-      const data = await traffic.list(100, 0); // Fetch more for table
+      const data = await traffic.list(500, 0); // Fetch more for table
       setLogs(data);
       if (data.length > 0 && !selectedLog) {
         setSelectedLog(data[0]);

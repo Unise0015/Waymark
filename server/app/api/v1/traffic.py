@@ -65,6 +65,14 @@ async def ingest_traffic(
     if not CAPTURE_ENABLED:
         return {"status": "ignored", "reason": "capture is disabled"}
 
+    # Ignore boring static assets to prevent DB spam
+    ignore_extensions = {".png", ".jpg", ".jpeg", ".gif", ".css", ".js", ".woff", ".woff2", ".svg", ".ico", ".webp"}
+    if payload.path:
+        path_lower = payload.path.lower()
+        if any(path_lower.endswith(ext) for ext in ignore_extensions):
+            return {"status": "ignored", "reason": "static asset"}
+
+
     # Determine content-type from response headers for binary detection
     resp_ct = ""
     if payload.response_headers:
