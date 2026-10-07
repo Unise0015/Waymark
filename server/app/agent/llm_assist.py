@@ -243,6 +243,13 @@ class LLMAssist:
         response_status, response_headers, response_body
         """
         steps_text = ""
+        
+        def filter_headers(headers_dict):
+            if not isinstance(headers_dict, dict):
+                return headers_dict
+            boring = {'user-agent', 'accept', 'accept-encoding', 'accept-language', 'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform', 'sec-fetch-dest', 'sec-fetch-mode', 'sec-fetch-site', 'connection', 'keep-alive'}
+            return {k: v for k, v in headers_dict.items() if k.lower() not in boring}
+
         for step in steps:
             steps_text += f"\n{'='*60}\n"
             steps_text += f"STEP {step['step_order']} of {len(steps)}\n"
@@ -250,15 +257,17 @@ class LLMAssist:
                 steps_text += f"TESTER'S NOTE: \"{step['note']}\"\n"
             steps_text += f"{step.get('method', 'GET')} {step.get('url', '')}\n"
             if step.get('request_headers'):
-                steps_text += f"Request Headers:\n{step['request_headers']}\n"
+                steps_text += f"Request Headers:\n{filter_headers(step['request_headers'])}\n"
             if step.get('request_body'):
-                body = step['request_body'][:2000]
+                body = step['request_body'][:800]
+                if len(step['request_body']) > 800: body += "\n[TRUNCATED]"
                 steps_text += f"Request Body:\n{body}\n"
             steps_text += f"Response Status: {step.get('response_status', 'N/A')}\n"
             if step.get('response_headers'):
-                steps_text += f"Response Headers:\n{step['response_headers']}\n"
+                steps_text += f"Response Headers:\n{filter_headers(step['response_headers'])}\n"
             if step.get('response_body'):
-                body = step['response_body'][:2000]
+                body = step['response_body'][:800]
+                if len(step['response_body']) > 800: body += "\n[TRUNCATED]"
                 steps_text += f"Response Body:\n{body}\n"
         
         prompt = f"""You are an expert penetration tester analyzing a CHAIN of HTTP requests that may form a vulnerability chain. Analyze them as a connected attack flow, NOT as individual requests.
@@ -344,7 +353,7 @@ Impact: [Business impact statement]
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3,
-            "max_tokens": 6000,
+            "max_tokens": 1500,
         }
         try:
             async with aiohttp.ClientSession() as session:
@@ -368,7 +377,7 @@ Impact: [Business impact statement]
         }
         payload = {
             "model": os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
-            "max_tokens": 6000,
+            "max_tokens": 1500,
             "system": VAPT_SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": prompt}],
         }
