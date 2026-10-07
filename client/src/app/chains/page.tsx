@@ -63,6 +63,20 @@ export default function ChainsPage() {
     }
   };
 
+
+  const handleDelete = async (e: React.MouseEvent, chainId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this chain?")) return;
+    try {
+      await chains.delete(chainId);
+      await fetchChains();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete chain");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pl-56">
       <div className="mx-auto max-w-7xl px-6 py-8">
@@ -106,18 +120,27 @@ export default function ChainsPage() {
                 className="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-gray-900 line-clamp-1" title={chain.name}>
-                    {chain.name}
-                  </h3>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      chain.status === "analyzed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {chain.status}
-                  </span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-900 line-clamp-1" title={chain.name}>
+                      {chain.name}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold }
+                    >
+                      {chain.status}
+                    </span>
+                    <button
+                      onClick={(e) => handleDelete(e, chain.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete Chain"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 {chain.hypothesis && (
                   <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">

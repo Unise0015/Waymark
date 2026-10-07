@@ -119,6 +119,17 @@ export default function ChainDetailPage() {
     log.path.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this chain?")) return;
+    try {
+      await chains.delete(chain.id);
+      router.push("/chains");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete chain");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f3f3f3] pl-56 pt-16 flex flex-col">
       <div className="bg-white border-b border-gray-300 p-4 shadow-sm z-10 flex items-center justify-between">
@@ -131,13 +142,21 @@ export default function ChainDetailPage() {
             {chain.status}
           </span>
         </div>
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing || (chain.steps?.length || 0) < 2}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {analyzing ? "Analyzing..." : "🧠 Analyze Chain"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDelete}
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+          >
+            🗑 Delete
+          </button>
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing || (chain.steps?.length || 0) < 2}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {analyzing ? "Analyzing..." : "✨ Analyze Chain"}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
