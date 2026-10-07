@@ -346,10 +346,16 @@ Impact: [Business impact statement]
             "temperature": 0.3,
             "max_tokens": 6000,
         }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=120)) as resp:
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=120)) as resp:
+                    data = await resp.json()
+                    if not resp.ok or "choices" not in data:
+                        err = data.get("error", {}).get("message", str(data)) if isinstance(data, dict) else str(data)
+                        return f"LLM Error ({resp.status}): {err}"
+                    return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"LLM Error: {str(e)}"
 
     async def _call_anthropic(self, prompt: str) -> str:
         """Call Anthropic Claude API."""
