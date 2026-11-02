@@ -96,10 +96,12 @@ app.include_router(integrations.router, prefix="/api/v1")
 from app.api.v1.exports import router as exports_router
 from app.api.v1.traffic import router as traffic_router
 from app.api.v1.manual_crawl import router as manual_crawl_router
+from app.api.v1.chains import router as chains_router
 
 app.include_router(exports_router, prefix="/api/v1")
 app.include_router(traffic_router, prefix="/api/v1")
 app.include_router(manual_crawl_router, prefix="/api/v1")
+app.include_router(chains_router, prefix="/api/v1")
 app.include_router(ws.router)
 
 

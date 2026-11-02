@@ -236,6 +236,80 @@ class LLMAssist:
             logging.warning(f"LLM traffic analysis failed: {e}")
             return f"Analysis failed: {str(e)}"
 
+    async def analyze_request_chain(self, chain_name: str, hypothesis: str, steps: list[dict]) -> str:
+        """
+        Analyze a chain of HTTP requests as a connected attack flow.
+        Each step dict has: step_order, note, method, url, request_headers, request_body,
+        response_status, response_headers, response_body
+        """
+        steps_text = ""
+        
+        def filter_headers(headers_dict):
+            if not isinstance(headers_dict, dict):
+                return headers_dict
+            boring = {'user-agent', 'accept', 'accept-encoding', 'accept-language', 'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform', 'sec-fetch-dest', 'sec-fetch-mode', 'sec-fetch-site', 'connection', 'keep-alive'}
+            return {k: v for k, v in headers_dict.items() if k.lower() not in boring}
+
+        for step in steps:
+            steps_text += f"\n{'='*60}\n"
+            steps_text += f"STEP {step['step_order']} of {len(steps)}\n"
+            if step.get('note'):
+                steps_text += f"TESTER'S NOTE: \"{step['note']}\"\n"
+            steps_text += f"{step.get('method', 'GET')} {step.get('url', '')}\n"
+            if step.get('request_headers'):
+                steps_text += f"Request Headers:\n{filter_headers(step['request_headers'])}\n"
+            if step.get('request_body'):
+                body = step['request_body'][:800]
+                if len(step['request_body']) > 800: body += "\n[TRUNCATED]"
+                steps_text += f"Request Body:\n{body}\n"
+            steps_text += f"Response Status: {step.get('response_status', 'N/A')}\n"
+            if step.get('response_headers'):
+                steps_text += f"Response Headers:\n{filter_headers(step['response_headers'])}\n"
+            if step.get('response_body'):
+                body = step['response_body'][:800]
+                if len(step['response_body']) > 800: body += "\n[TRUNCATED]"
+                steps_text += f"Response Body:\n{body}\n"
+        
+        prompt = f"""You are an expert penetration tester analyzing a CHAIN of HTTP requests that may form a vulnerability chain. Analyze them as a connected attack flow, NOT as individual requests.
+
+CHAIN NAME: {chain_name}
+TESTER'S HYPOTHESIS: {hypothesis or 'Not specified'}
+
+{steps_text}
+
+{'='*60}
+
+Provide your analysis in this EXACT format:
+
+**VERDICT:** [CONFIRMED VULNERABILITY / PARTIAL VULNERABILITY / FAILED ATTEMPT / INCONCLUSIVE]
+**SEVERITY:** [CRITICAL / HIGH / MEDIUM / LOW / INFO]
+**CLASSIFICATION:** [OWASP Top 10 category and CWE IDs]
+
+**Chain Summary:**
+[2-3 sentence summary of what the attack chain attempts]
+
+**Step-by-Step Breakdown:**
+[For each step, explain what happened, what was discovered, and how it connects to the next step]
+
+**Vulnerability Analysis:**
+[Detailed technical analysis of the vulnerability chain. What makes it exploitable? What's the impact?]
+
+**Evidence:**
+[Key evidence from the request/response data that proves or disproves the vulnerability]
+
+**Recommended Next Steps:**
+[What should the tester try next to confirm, expand, or report this finding?]
+
+**Report-Ready Finding:**
+Title: [Concise vulnerability title]
+Severity: [severity]
+Description: [Professional description suitable for a bug bounty report]
+Steps to Reproduce:
+[Numbered steps]
+Impact: [Business impact statement]
+"""
+        return await self._call_llm(prompt)
+
     async def _call_llm(self, prompt: str) -> str:
         """Route the prompt to the detected LLM provider."""
         if self.provider == "ollama":
@@ -279,12 +353,18 @@ class LLMAssist:
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3,
-            "max_tokens": 6000,
+            "max_tokens": 1500,
         }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=120)) as resp:
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=120)) as resp:
+                    data = await resp.json()
+                    if not resp.ok or "choices" not in data:
+                        err = data.get("error", {}).get("message", str(data)) if isinstance(data, dict) else str(data)
+                        return f"LLM Error ({resp.status}): {err}"
+                    return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"LLM Error: {str(e)}"
 
     async def _call_anthropic(self, prompt: str) -> str:
         """Call Anthropic Claude API."""
@@ -297,7 +377,7 @@ class LLMAssist:
         }
         payload = {
             "model": os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
-            "max_tokens": 6000,
+            "max_tokens": 1500,
             "system": VAPT_SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": prompt}],
         }
